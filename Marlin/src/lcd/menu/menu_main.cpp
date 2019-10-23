@@ -171,10 +171,10 @@ void menu_main() {
 
   #if ENABLED(CUSTOM_USER_MENUS)
     #ifdef CUSTOM_USER_MENU_TITLE
-      #undef MSG_USER_MENU
-      #define MSG_USER_MENU CUSTOM_USER_MENU_TITLE
+      SUBMENU_P(PSTR(CUSTOM_USER_MENU_TITLE), menu_user);
+    #else
+      SUBMENU(MSG_USER_MENU, menu_user);
     #endif
-    SUBMENU(MSG_USER_MENU, menu_user);
   #endif
 
   #if ENABLED(ADVANCED_PAUSE_FEATURE)
@@ -182,7 +182,7 @@ void menu_main() {
       if (thermalManager.targetHotEnoughToExtrude(active_extruder))
         GCODES_ITEM(MSG_FILAMENTCHANGE, PSTR("M600 B0"));
       else
-        SUBMENU(MSG_FILAMENTCHANGE, [](){ _menu_temp_filament_op(PAUSE_MODE_LOAD_FILAMENT, 0); });
+        SUBMENU(MSG_FILAMENTCHANGE, [](){ _menu_temp_filament_op(PAUSE_MODE_CHANGE_FILAMENT, 0); });
     #else
       SUBMENU(MSG_FILAMENTCHANGE, menu_change_filament);
     #endif
@@ -199,7 +199,7 @@ void menu_main() {
   //
   // Switch power on/off
   //
-  #if HAS_POWER_SWITCH
+  #if ENABLED(PSU_CONTROL)
     if (powersupply_on)
       GCODES_ITEM(MSG_SWITCH_PS_OFF, PSTR("M81"));
     else

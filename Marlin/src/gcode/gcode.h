@@ -548,7 +548,7 @@ private:
     static void M78();
   #endif
 
-  #if HAS_POWER_SWITCH
+  #if ENABLED(PSU_CONTROL)
     static void M80();
   #endif
 
@@ -620,7 +620,7 @@ private:
 
   #if HAS_HEATED_CHAMBER
     static void M141();
-    //static void M191();
+    static void M191();
   #endif
 
   #if HOTENDS && HAS_LCD_MENU

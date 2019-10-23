@@ -71,7 +71,7 @@
 // @section info
 
 // Author info of this build printed to the host during boot and M115
-#define STRING_CONFIG_H_AUTHOR "(V1 Engineering, Ryan, 414)" // Who made the changes.
+#define STRING_CONFIG_H_AUTHOR "(V1 Engineering, Ryan, 414D)" // Who made the changes.
 //#define CUSTOM_VERSION_FILE Version.h // Path from the root directory (no quotes)
 
 /**
@@ -785,7 +785,7 @@
  *   http://blog.kyneticcnc.com/2018/10/computing-junction-deviation-for-marlin.html
  */
 #if DISABLED(CLASSIC_JERK)
-  #define JUNCTION_DEVIATION_MM 0.05 // (mm) Distance from real junction edge
+  #define JUNCTION_DEVIATION_MM 0.1 // (mm) Distance from real junction edge
 #endif
 
 /**

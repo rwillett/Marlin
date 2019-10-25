@@ -71,12 +71,8 @@
 // @section info
 
 // Author info of this build printed to the host during boot and M115
-<<<<<<< HEAD
-#define STRING_CONFIG_H_AUTHOR "(V1 Engineering, Ryan, 412)" // Who made the changes.
-=======
-#define STRING_CONFIG_H_AUTHOR "(none, default config)" // Who made the changes.
+#define STRING_CONFIG_H_AUTHOR "(V1 Engineering, Ryan, 414)" // Who made the changes.
 //#define CUSTOM_VERSION_FILE Version.h // Path from the root directory (no quotes)
->>>>>>> My_bugfix-2.0.x
 
 /**
  * *** VENDORS PLEASE READ ***
@@ -760,43 +756,18 @@
 #define DEFAULT_TRAVEL_ACCELERATION   2000    // X, Y, Z acceleration for travel (non printing) moves
 
 /**
-<<<<<<< HEAD
- * Junction Deviation
- *
- * Use Junction Deviation instead of traditional Jerk Limiting
- *
- * See:
- *   https://reprap.org/forum/read.php?1,739819
- *   http://blog.kyneticcnc.com/2018/10/computing-junction-deviation-for-marlin.html
- */
-#define JUNCTION_DEVIATION
-#if ENABLED(JUNCTION_DEVIATION)
-  #define JUNCTION_DEVIATION_MM 0.01  // (mm) Distance from real junction edge
-#endif
-
-/**
- * Default Jerk (mm/s)
-=======
  * Default Jerk limits (mm/s)
->>>>>>> My_bugfix-2.0.x
  * Override with M205 X Y Z E
  *
  * "Jerk" specifies the minimum speed change that requires acceleration.
  * When changing speed and direction, if the difference is less than the
  * value set here, it may happen instantaneously.
  */
-<<<<<<< HEAD
-#if DISABLED(JUNCTION_DEVIATION)
+//#define CLASSIC_JERK
+#if ENABLED(CLASSIC_JERK)
   #define DEFAULT_XJERK 5.0
   #define DEFAULT_YJERK 5.0
   #define DEFAULT_ZJERK  0.15
-=======
-//#define CLASSIC_JERK
-#if ENABLED(CLASSIC_JERK)
-  #define DEFAULT_XJERK 10.0
-  #define DEFAULT_YJERK 10.0
-  #define DEFAULT_ZJERK  0.3
->>>>>>> My_bugfix-2.0.x
 
   //#define LIMITED_JERK_EDITING        // Limit edit via M205 or LCD to DEFAULT_aJERK * 2
   #if ENABLED(LIMITED_JERK_EDITING)

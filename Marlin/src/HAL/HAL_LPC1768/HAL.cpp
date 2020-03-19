@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -29,6 +29,8 @@
 #if ENABLED(USE_WATCHDOG)
   #include "watchdog.h"
 #endif
+
+uint32_t HAL_adc_reading = 0;
 
 // U8glib required functions
 extern "C" void u8g_xMicroDelay(uint16_t val) {
@@ -61,7 +63,7 @@ int freeMemory() {
 //   return dval if not found or not a valid pin.
 int16_t PARSED_PIN_INDEX(const char code, const int16_t dval) {
   const uint16_t val = (uint16_t)parser.intval(code, -1), port = val / 100, pin = val % 100;
-  const  int16_t ind = (port < ((NUM_DIGITAL_PINS) >> 5) && pin < 32) ? GET_PIN_MAP_INDEX((port << 5) | pin) : -2;
+  const  int16_t ind = (port < ((NUM_DIGITAL_PINS) >> 5) && pin < 32) ? ((port << 5) | pin) : -2;
   return ind > -1 ? ind : dval;
 }
 

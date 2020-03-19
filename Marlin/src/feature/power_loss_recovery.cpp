@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -64,6 +64,9 @@ PrintJobRecovery recovery;
 #endif
 #ifndef POWER_LOSS_RETRACT_LEN
   #define POWER_LOSS_RETRACT_LEN 0
+#endif
+#ifndef POWER_LOSS_ZRAISE
+  #define POWER_LOSS_ZRAISE 2
 #endif
 
 /**
@@ -138,7 +141,7 @@ void PrintJobRecovery::prepare() {
 /**
  * Save the current machine state to the power-loss recovery file
  */
-void PrintJobRecovery::save(const bool force/*=false*/, const bool save_queue/*=true*/) {
+void PrintJobRecovery::save(const bool force/*=false*/) {
 
   #if SAVE_INFO_INTERVAL_MS > 0
     static millis_t next_save_ms; // = 0
@@ -181,6 +184,15 @@ void PrintJobRecovery::save(const bool force/*=false*/, const bool save_queue/*=
 
     #if EXTRUDERS > 1
       info.active_extruder = active_extruder;
+    #endif
+
+    #if DISABLED(NO_VOLUMETRICS)
+      info.volumetric_enabled = parser.volumetric_enabled;
+      #if EXTRUDERS > 1
+        for (int8_t e = 0; e < EXTRUDERS; e++) info.filament_size[e] = planner.filament_size[e];
+      #else
+        if (parser.volumetric_enabled) info.filament_size = planner.filament_size[active_extruder];
+      #endif
     #endif
 
     #if EXTRUDERS
@@ -226,10 +238,34 @@ void PrintJobRecovery::save(const bool force/*=false*/, const bool save_queue/*=
 }
 
 #if PIN_EXISTS(POWER_LOSS)
+
   void PrintJobRecovery::_outage() {
-    save(true);
+    #if ENABLED(BACKUP_POWER_SUPPLY)
+      static bool lock = false;
+      if (lock) return; // No re-entrance from idle() during raise_z()
+      lock = true;
+    #endif
+    if (IS_SD_PRINTING()) save(true);
+    #if ENABLED(BACKUP_POWER_SUPPLY)
+      raise_z();
+    #endif
+
     kill(GET_TEXT(MSG_OUTAGE_RECOVERY));
   }
+
+  #if ENABLED(BACKUP_POWER_SUPPLY)
+
+    void PrintJobRecovery::raise_z() {
+      // Disable all heaters to reduce power loss
+      thermalManager.disable_all_heaters();
+      quickstop_stepper();
+      // Raise Z axis
+      gcode.process_subcommands_now_P(PSTR("G91\nG0 Z" STRINGIFY(POWER_LOSS_ZRAISE)));
+      planner.synchronize();
+    }
+
+  #endif
+
 #endif
 
 /**
@@ -251,8 +287,6 @@ void PrintJobRecovery::write() {
  */
 void PrintJobRecovery::resume() {
 
-  #define RECOVERY_ZRAISE 2
-
   const uint32_t resume_sdpos = info.sdpos; // Get here before the stepper ISR overwrites it
 
   #if HAS_LEVELING
@@ -263,15 +297,27 @@ void PrintJobRecovery::resume() {
   // Reset E, raise Z, home XY...
   gcode.process_subcommands_now_P(PSTR("G92.9 E0"
     #if Z_HOME_DIR > 0
-      // If Z homing goes to max, reset E and home all
-      "\nG28R0"
+
+      // If Z homing goes to max, just reset E and home all
+      "\n"
+      "G28R0"
       #if ENABLED(MARLIN_DEV_MODE)
         "S"
       #endif
-    #else
+
+    #else // "G92.9 E0 ..."
+
       // Set Z to 0, raise Z by RECOVERY_ZRAISE, and Home (XY only for Cartesian)
       // with no raise. (Only do simulated homing in Marlin Dev Mode.)
-      "Z0\nG1Z" STRINGIFY(RECOVERY_ZRAISE) "\nG28R0"
+      #if ENABLED(BACKUP_POWER_SUPPLY)
+        "Z" STRINGIFY(POWER_LOSS_ZRAISE)    // Z-axis was already raised at outage
+      #else
+        "Z0\n"                              // Set Z=0
+        "G1Z" STRINGIFY(POWER_LOSS_ZRAISE)  // Raise Z
+      #endif
+      "\n"
+
+      "G28R0"
       #if ENABLED(MARLIN_DEV_MODE)
         "S"
       #elif !IS_KINEMATIC
@@ -289,6 +335,27 @@ void PrintJobRecovery::resume() {
   #if EXTRUDERS > 1
     sprintf_P(cmd, PSTR("T%i S"), info.active_extruder);
     gcode.process_subcommands_now(cmd);
+  #endif
+
+  // Recover volumetric extrusion state
+  #if DISABLED(NO_VOLUMETRICS)
+    #if EXTRUDERS > 1
+      for (int8_t e = 0; e < EXTRUDERS; e++) {
+        dtostrf(info.filament_size[e], 1, 3, str_1);
+        sprintf_P(cmd, PSTR("M200 T%i D%s"), e, str_1);
+        gcode.process_subcommands_now(cmd);
+      }
+      if (!info.volumetric_enabled) {
+        sprintf_P(cmd, PSTR("M200 T%i D0"), info.active_extruder);
+        gcode.process_subcommands_now(cmd);
+      }
+    #else
+      if (info.volumetric_enabled) {
+        dtostrf(info.filament_size, 1, 3, str_1);
+        sprintf_P(cmd, PSTR("M200 D%s"), str_1);
+        gcode.process_subcommands_now(cmd);
+      }
+    #endif
   #endif
 
   #if HAS_HEATED_BED
@@ -407,7 +474,8 @@ void PrintJobRecovery::resume() {
 
   // Resume the SD file from the last position
   char *fn = info.sd_filename;
-  sprintf_P(cmd, PSTR("M23 %s"), fn);
+  extern const char M23_STR[];
+  sprintf_P(cmd, M23_STR, fn);
   gcode.process_subcommands_now(cmd);
   sprintf_P(cmd, PSTR("M24 S%ld T%ld"), resume_sdpos, info.print_job_elapsed);
   gcode.process_subcommands_now(cmd);

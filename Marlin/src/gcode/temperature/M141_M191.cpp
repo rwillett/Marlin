@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -18,6 +18,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
+ */
+
+/**
+ * gcode/temperature/M141_M191.cpp
+ *
+ * Chamber target temperature control
  */
 
 #include "../../inc/MarlinConfig.h"
@@ -38,7 +44,7 @@
   #include "../../feature/leds/leds.h"
 #endif
 
-#include "../../Marlin.h" // for wait_for_heatup and idle()
+#include "../../MarlinCore.h" // for wait_for_heatup, idle, startOrResumeJob
 
 /**
  * M141: Set chamber temperature
@@ -59,15 +65,14 @@ void GcodeSuite::M191() {
   if (no_wait_for_cooling || parser.seenval('R')) {
     thermalManager.setTargetChamber(parser.value_celsius());
     #if ENABLED(PRINTJOB_TIMER_AUTOSTART)
-      if (parser.value_celsius() > BED_MINTEMP)
-        print_job_timer.start();
+      thermalManager.check_timer_autostart(true, false);
     #endif
   }
   else return;
 
   const bool is_heating = thermalManager.isHeatingChamber();
   if (is_heating || !no_wait_for_cooling) {
-    lcd_setstatusPGM(is_heating ? GET_TEXT(MSG_CHAMBER_HEATING) : GET_TEXT(MSG_CHAMBER_COOLING));
+    ui.set_status_P(is_heating ? GET_TEXT(MSG_CHAMBER_HEATING) : GET_TEXT(MSG_CHAMBER_COOLING));
     thermalManager.wait_for_chamber(false);
   }
 }

@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -57,6 +57,15 @@ typedef struct {
 
   #if EXTRUDERS > 1
     uint8_t active_extruder;
+  #endif
+
+  #if DISABLED(NO_VOLUMETRICS)
+    bool volumetric_enabled;
+    #if EXTRUDERS > 1
+      float filament_size[EXTRUDERS];
+    #else
+      float filament_size;
+    #endif
   #endif
 
   #if HOTENDS
@@ -139,27 +148,26 @@ class PrintJobRecovery {
     static void enable(const bool onoff);
     static void changed();
 
-    static void check();
-    static void resume();
-
     static inline bool exists() { return card.jobRecoverFileExists(); }
     static inline void open(const bool read) { card.openJobRecoveryFile(read); }
     static inline void close() { file.close(); }
 
+    static void check();
+    static void resume();
     static void purge();
+
+    static inline void cancel() { purge(); card.autostart_index = 0; }
+
     static void load();
-    static void save(const bool force=
+    static void save(const bool force=false
       #if ENABLED(SAVE_EACH_CMD_MODE)
-        true
-      #else
-        false
+        || true
       #endif
-      , const bool save_queue=true
     );
 
   #if PIN_EXISTS(POWER_LOSS)
     static inline void outage() {
-      if (enabled && IS_SD_PRINTING() && READ(POWER_LOSS_PIN) == POWER_LOSS_STATE)
+      if (enabled && READ(POWER_LOSS_PIN) == POWER_LOSS_STATE)
         _outage();
     }
   #endif
@@ -174,6 +182,10 @@ class PrintJobRecovery {
 
   private:
     static void write();
+
+  #if ENABLED(BACKUP_POWER_SUPPLY)
+    static void raise_z();
+  #endif
 
   #if PIN_EXISTS(POWER_LOSS)
     static void _outage();

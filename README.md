@@ -5,15 +5,20 @@
 These versions of Marlin are all configured for use on V1Engineering machines. They are all based
 off of the **bugfix-2.0.x** branch.
 
-The branches have the following naming convention:
+### Flashing - Installing the firmware -
 
-Machine_Controller_ZAxis_LCD_Other
+Arduino - 
+Platform.io -
+
+V1 Docs - ![Arduino](https://docs.v1engineering.com/electronics/marlin-firmware/)
+V1 Docs - ![Platform.io](https://docs.v1engineering.com/learn/platformio/)
+
 
 #### Machine is one of these:
 
-MPCNC - For Mostly Printed CNC and Low Rider
+V1CNC - For Mostly Printed CNC and Low Rider
 
-MP3DP - For the Milled Printed 3D Printer
+V13DP - For the Milled Printed 3D Printer
 
 ZenXY - For the ZenXY
 
